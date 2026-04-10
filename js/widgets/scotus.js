@@ -2,6 +2,9 @@
 (function() {
   const CONTAINER = 'scotus-content';
   const NAME = 'scotus';
+  const CACHE_KEY = 'dash_scotus_cache';
+  const CACHE_TTL = 6 * 60 * 60 * 1000; // 6 hours
+
   let cachedOpinions = [];
   let cachedArgs = [];
 
@@ -12,22 +15,46 @@
     return String(year).slice(-2);
   }
 
-  // Fetch HTML via CORS proxy with retry
+  // --- localStorage cache ---
+  function loadFromStorage() {
+    try {
+      const raw = localStorage.getItem(CACHE_KEY);
+      if (!raw) return false;
+      const cached = JSON.parse(raw);
+      if (Date.now() - cached.timestamp > CACHE_TTL * 4) return false; // stale after 24h
+      cachedOpinions = cached.opinions || [];
+      cachedArgs = cached.args || [];
+      return cachedOpinions.length > 0;
+    } catch { return false; }
+  }
+
+  function saveToStorage() {
+    try {
+      localStorage.setItem(CACHE_KEY, JSON.stringify({
+        opinions: cachedOpinions,
+        args: cachedArgs,
+        timestamp: Date.now()
+      }));
+    } catch { /* quota exceeded, ignore */ }
+  }
+
+  function cacheIsFresh() {
+    try {
+      const raw = localStorage.getItem(CACHE_KEY);
+      if (!raw) return false;
+      const cached = JSON.parse(raw);
+      return Date.now() - cached.timestamp < CACHE_TTL;
+    } catch { return false; }
+  }
+
+  // --- Fetch via CORS proxy (single attempt, no retry) ---
   async function fetchViaProxy(targetUrl) {
     const proxyUrl = `https://api.allorigins.win/get?url=${encodeURIComponent(targetUrl)}`;
-    // Try up to 2 times with a short delay
-    for (let attempt = 0; attempt < 2; attempt++) {
-      try {
-        const res = await fetch(proxyUrl);
-        if (!res.ok) throw new Error(`Proxy error: ${res.status}`);
-        const data = await res.json();
-        if (!data.contents) throw new Error('Empty response from proxy');
-        return data.contents;
-      } catch (err) {
-        if (attempt === 1) throw err;
-        await new Promise(r => setTimeout(r, 1500));
-      }
-    }
+    const res = await fetch(proxyUrl);
+    if (!res.ok) throw new Error(`Proxy error: ${res.status}`);
+    const data = await res.json();
+    if (!data.contents) throw new Error('Empty response from proxy');
+    return data.contents;
   }
 
   function parseOpinions(html) {
@@ -124,24 +151,51 @@
     document.getElementById(CONTAINER).innerHTML = content;
   }
 
-  async function refresh() {
+  async function fetchFresh() {
+    const termNum = getCurrentTermNum();
+    const html = await fetchViaProxy(`https://www.supremecourt.gov/opinions/slipopinion/${termNum}`);
+    const opinions = parseOpinions(html);
+    if (opinions.length) cachedOpinions = opinions;
+
     try {
-      const termNum = getCurrentTermNum();
-      const html = await fetchViaProxy(`https://www.supremecourt.gov/opinions/slipopinion/${termNum}`);
-      const opinions = parseOpinions(html);
-      if (opinions.length) cachedOpinions = opinions;
+      const argsHtml = await fetchViaProxy('https://www.supremecourt.gov/oral_arguments/argument_calendar.aspx');
+      const args = parseArguments(argsHtml);
+      if (args.length) cachedArgs = args;
+    } catch { /* arguments calendar is optional */ }
 
-      // Try to get upcoming arguments (non-blocking)
-      try {
-        const argsHtml = await fetchViaProxy('https://www.supremecourt.gov/oral_arguments/argument_calendar.aspx');
-        const args = parseArguments(argsHtml);
-        if (args.length) cachedArgs = args;
-      } catch { /* arguments calendar is optional */ }
+    saveToStorage();
+    render();
+    Dashboard.setUpdatedTime(NAME);
+  }
 
+  function init() {
+    // Show cached data instantly if available
+    if (loadFromStorage()) {
       render();
       Dashboard.setUpdatedTime(NAME);
+
+      // If cache is still fresh, skip the network fetch
+      if (cacheIsFresh()) {
+        setInterval(refresh, CACHE_TTL);
+        return;
+      }
+    }
+
+    // Fetch fresh data (in background if we already rendered from cache)
+    fetchFresh().catch(err => {
+      if (!cachedOpinions.length) {
+        Dashboard.showError(CONTAINER, 'Could not load Supreme Court data');
+      }
+      console.error('SCOTUS widget error:', err);
+    });
+
+    setInterval(refresh, CACHE_TTL);
+  }
+
+  async function refresh() {
+    try {
+      await fetchFresh();
     } catch (err) {
-      // If we have cached data, keep showing it
       if (cachedOpinions.length) {
         render();
       } else {
@@ -149,11 +203,6 @@
       }
       console.error('SCOTUS widget error:', err);
     }
-  }
-
-  function init() {
-    refresh();
-    setInterval(refresh, 6 * 60 * 60 * 1000);
   }
 
   Dashboard.registerWidget(NAME, { init, refresh });
