@@ -5,11 +5,12 @@
   const PROXY = 'https://api.rss2json.com/v1/api.json?rss_url=';
   const FEEDS = {
     nyt: { url: 'https://rss.nytimes.com/services/xml/rss/nyt/HomePage.xml', label: 'NYT' },
-    wsj: { url: 'https://feeds.a.dj.com/rss/RSSWorldNews.xml', label: 'WSJ' }
+    mw:  { url: 'https://feeds.content.dowjones.io/public/rss/mw_topstories', label: 'MW' },
+    bbc: { url: 'https://feeds.bbci.co.uk/news/rss.xml', label: 'BBC' }
   };
 
   let activeTab = 'nyt';
-  let cachedData = { nyt: [], wsj: [] };
+  let cachedData = { nyt: [], mw: [], bbc: [] };
 
   async function fetchFeed(key) {
     const feed = FEEDS[key];
@@ -26,12 +27,10 @@
   }
 
   function renderTabs() {
-    return `
-      <div class="widget-tabs">
-        <button class="widget-tab ${activeTab === 'nyt' ? 'active' : ''}" data-tab="nyt">NYT</button>
-        <button class="widget-tab ${activeTab === 'wsj' ? 'active' : ''}" data-tab="wsj">WSJ</button>
-      </div>
-    `;
+    const tabs = Object.entries(FEEDS).map(([key, feed]) =>
+      `<button class="widget-tab ${activeTab === key ? 'active' : ''}" data-tab="${key}">${feed.label}</button>`
+    ).join('');
+    return `<div class="widget-tabs">${tabs}</div>`;
   }
 
   function renderItems(items) {
@@ -61,12 +60,11 @@
 
   async function refresh() {
     try {
-      const [nyt, wsj] = await Promise.all([
-        fetchFeed('nyt').catch(() => cachedData.nyt),
-        fetchFeed('wsj').catch(() => cachedData.wsj)
-      ]);
-      cachedData.nyt = nyt;
-      cachedData.wsj = wsj;
+      const keys = Object.keys(FEEDS);
+      const results = await Promise.all(
+        keys.map(k => fetchFeed(k).catch(() => cachedData[k]))
+      );
+      keys.forEach((k, i) => { cachedData[k] = results[i]; });
       render();
       Dashboard.setUpdatedTime(NAME);
     } catch (err) {
