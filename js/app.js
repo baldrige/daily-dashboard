@@ -184,8 +184,11 @@ const Dashboard = {
   },
 
   initWidgets() {
-    // Each widget script registers itself and starts
-    // They are loaded after app.js in index.html
+    // Widgets register themselves when their scripts load, but don't self-start.
+    // We init them here after settings are loaded.
+    Object.values(this.widgets).forEach(w => {
+      if (w && typeof w.init === 'function') w.init();
+    });
   },
 
   // --- Helpers ---

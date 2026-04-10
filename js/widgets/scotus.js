@@ -157,5 +157,4 @@
   }
 
   Dashboard.registerWidget(NAME, { init, refresh });
-  init();
 })();
