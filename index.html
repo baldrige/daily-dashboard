@@ -1,0 +1,140 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="light">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Daily Dashboard</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Source+Sans+3:ital,wght@0,400;0,500;0,600;0,700;1,400&family=IBM+Plex+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;600&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="css/styles.css">
+</head>
+<body>
+  <div class="layout">
+    <aside class="sidebar">
+      <div class="sidebar-rule"></div>
+      <div class="sidebar-inner">
+        <h1 class="sidebar-title">The Daily Brief</h1>
+        <div id="header-clock" class="sidebar-clock"></div>
+        <nav class="sidebar-actions">
+          <button id="refresh-all-btn" class="icon-btn" title="Refresh All">&#x21bb;</button>
+          <button id="theme-toggle-btn" class="icon-btn" title="Toggle Theme">&#x263E;</button>
+          <button id="settings-btn" class="icon-btn" title="Settings">&#x2699;</button>
+        </nav>
+      </div>
+    </aside>
+
+    <main class="grid">
+    <section class="card" id="weather-card">
+      <div class="card-header">
+        <span class="card-icon">&#x26C5;</span>
+        <h2>Weather</h2>
+      </div>
+      <div class="card-body" id="weather-content">
+        <div class="skeleton-block"></div>
+      </div>
+      <div class="card-footer"><span class="last-updated" data-widget="weather"></span></div>
+    </section>
+
+    <section class="card" id="calendar-card">
+      <div class="card-header">
+        <span class="card-icon">&#x1F4C5;</span>
+        <h2>Calendar</h2>
+      </div>
+      <div class="card-body" id="calendar-content">
+        <div class="skeleton-block"></div>
+      </div>
+      <div class="card-footer"><span class="last-updated" data-widget="calendar"></span></div>
+    </section>
+
+    <section class="card" id="phillies-card">
+      <div class="card-header">
+        <span class="card-icon">&#x26BE;</span>
+        <h2>Phillies</h2>
+      </div>
+      <div class="card-body" id="phillies-content">
+        <div class="skeleton-block"></div>
+      </div>
+      <div class="card-footer"><span class="last-updated" data-widget="phillies"></span></div>
+    </section>
+
+    <section class="card" id="news-card">
+      <div class="card-header">
+        <span class="card-icon">&#x1F4F0;</span>
+        <h2>News</h2>
+      </div>
+      <div class="card-body" id="news-content">
+        <div class="skeleton-block"></div>
+      </div>
+      <div class="card-footer"><span class="last-updated" data-widget="news"></span></div>
+    </section>
+
+    <section class="card" id="stocks-card">
+      <div class="card-header">
+        <span class="card-icon">&#x1F4C8;</span>
+        <h2>Markets</h2>
+      </div>
+      <div class="card-body" id="stocks-content">
+        <div class="skeleton-block"></div>
+      </div>
+      <div class="card-footer"><span class="last-updated" data-widget="stocks"></span></div>
+    </section>
+
+    <section class="card" id="scotus-card">
+      <div class="card-header">
+        <span class="card-icon">&#x2696;</span>
+        <h2>Supreme Court</h2>
+      </div>
+      <div class="card-body" id="scotus-content">
+        <div class="skeleton-block"></div>
+      </div>
+      <div class="card-footer"><span class="last-updated" data-widget="scotus"></span></div>
+    </section>
+  </main>
+  </div>
+
+  <!-- Settings Modal -->
+  <div id="settings-modal" class="modal-overlay hidden">
+    <div class="modal">
+      <div class="modal-header">
+        <h2>Settings</h2>
+        <button id="settings-close-btn" class="icon-btn">&times;</button>
+      </div>
+      <div class="modal-body">
+        <div class="setting-group">
+          <label for="setting-owm-key">OpenWeatherMap API Key</label>
+          <input type="text" id="setting-owm-key" placeholder="Enter your API key">
+          <small>Get one free at <a href="https://openweathermap.org/api" target="_blank">openweathermap.org</a></small>
+        </div>
+        <div class="setting-group">
+          <label for="setting-finnhub-key">Finnhub API Key</label>
+          <input type="text" id="setting-finnhub-key" placeholder="Enter your API key">
+          <small>Get one free at <a href="https://finnhub.io/register" target="_blank">finnhub.io</a></small>
+        </div>
+        <div class="setting-group">
+          <label>Google Calendars</label>
+          <div id="calendar-ids-list"></div>
+          <div style="display:flex;gap:8px;margin-top:8px">
+            <input type="text" id="setting-calendar-id-new" placeholder="Calendar ID (e.g. your-email@gmail.com)">
+            <button type="button" id="add-calendar-btn" class="btn-secondary">Add</button>
+          </div>
+          <small>Add each calendar you want displayed. Find Calendar IDs in Google Calendar Settings &gt; Integrate calendar. Calendars must be set to public.</small>
+        </div>
+        <div class="setting-group">
+          <label for="setting-tickers">Stock Tickers (comma-separated)</label>
+          <input type="text" id="setting-tickers" placeholder="SPY, AAPL, MSFT, GOOGL">
+        </div>
+        <button id="settings-save-btn" class="btn-primary">Save Settings</button>
+      </div>
+    </div>
+  </div>
+
+  <script src="js/app.js"></script>
+  <script src="js/widgets/weather.js"></script>
+  <script src="js/widgets/calendar.js"></script>
+  <script src="js/widgets/phillies.js"></script>
+  <script src="js/widgets/news.js"></script>
+  <script src="js/widgets/stocks.js"></script>
+  <script src="js/widgets/scotus.js"></script>
+</body>
+</html>
