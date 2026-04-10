@@ -41,6 +41,7 @@ const Dashboard = {
     this.settings = {
       owmKey: localStorage.getItem('dash_owm_key') || this.DEFAULTS.owmKey,
       finnhubKey: localStorage.getItem('dash_finnhub_key') || this.DEFAULTS.finnhubKey,
+      gcalKey: localStorage.getItem('dash_gcal_key') || '',
       calendarIds,
       tickers: localStorage.getItem('dash_tickers') || this.DEFAULTS.tickers,
       theme: localStorage.getItem('dash_theme') || this.DEFAULTS.theme,
@@ -84,11 +85,13 @@ const Dashboard = {
     const fields = {
       owmKey: document.getElementById('setting-owm-key').value.trim(),
       finnhubKey: document.getElementById('setting-finnhub-key').value.trim(),
+      gcalKey: document.getElementById('setting-gcal-key').value.trim(),
       calendarIds: [...this._pendingCalendarIds],
       tickers: document.getElementById('setting-tickers').value.trim() || this.DEFAULTS.tickers,
     };
     localStorage.setItem('dash_owm_key', fields.owmKey);
     localStorage.setItem('dash_finnhub_key', fields.finnhubKey);
+    localStorage.setItem('dash_gcal_key', fields.gcalKey);
     localStorage.setItem('dash_calendar_ids', JSON.stringify(fields.calendarIds));
     localStorage.setItem('dash_tickers', fields.tickers);
     Object.assign(this.settings, fields);
@@ -98,6 +101,7 @@ const Dashboard = {
 
   showSettings() {
     document.getElementById('setting-owm-key').value = this.settings.owmKey;
+    document.getElementById('setting-gcal-key').value = this.settings.gcalKey;
     document.getElementById('setting-finnhub-key').value = this.settings.finnhubKey;
     document.getElementById('setting-tickers').value = this.settings.tickers;
     this._pendingCalendarIds = [...this.settings.calendarIds];
