@@ -9,7 +9,11 @@
     const url = `https://www.googleapis.com/calendar/v3/calendars/${encodeURIComponent(calendarId)}/events`
       + `?key=${apiKey}&timeMin=${now}&timeMax=${maxDate}&maxResults=15&singleEvents=true&orderBy=startTime`;
     const res = await fetch(url);
-    if (!res.ok) throw new Error(`Calendar API error: ${res.status}`);
+    if (!res.ok) {
+      const errData = await res.json().catch(() => ({}));
+      const msg = errData?.error?.message || `HTTP ${res.status}`;
+      throw new Error(`${calendarId}: ${msg}`);
+    }
     const data = await res.json();
     return (data.items || []).map(ev => ({
       title: ev.summary || '(No title)',
@@ -104,10 +108,31 @@
     // If we have an API key, use the styled approach
     if (apiKey) {
       try {
+        const errors = [];
         const allEvents = await Promise.all(
-          calIds.map(id => fetchEvents(id, apiKey).catch(() => []))
+          calIds.map(id => fetchEvents(id, apiKey).catch(err => {
+            errors.push(err.message);
+            return [];
+          }))
         );
         const merged = allEvents.flat().sort((a, b) => new Date(a.start) - new Date(b.start));
+
+        // If every calendar errored, show the error details
+        if (errors.length === calIds.length) {
+          document.getElementById(CONTAINER).innerHTML = `
+            <div class="cal-empty">
+              Could not load calendar events.<br>
+              <span style="font-size:0.75rem;color:var(--text-muted)">${errors[0]}</span><br>
+              <a href="#" id="calendar-open-settings" style="font-size:0.78rem;margin-top:6px;display:inline-block">Check Settings</a>
+            </div>
+          `;
+          document.getElementById('calendar-open-settings')?.addEventListener('click', (e) => {
+            e.preventDefault();
+            Dashboard.showSettings();
+          });
+          return;
+        }
+
         document.getElementById(CONTAINER).innerHTML = renderEvents(merged);
         Dashboard.setUpdatedTime(NAME);
         return;
